@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор ППУ — переменные и пересчёт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0c1220;
+  --panel: #141c2e;
+  --panel2: #1a2438;
+  --line: #2a3650;
+  --text: #e9eef7;
+  --muted: #8fa0b8;
+  --accent: #22d3ee;
+  --accent2: #38bdf8;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --violet: #a78bfa;
+  --input: #0f1729;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 70% 40% at 10% 0%, rgba(34,211,238,.12), transparent),
+    radial-gradient(ellipse 50% 30% at 90% 10%, rgba(167,139,250,.1), transparent);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.app { max-width: 1700px; margin: 0 auto; padding: 18px 20px 48px; }
+header {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px;
+  align-items: flex-end; margin-bottom: 20px; padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+header h1 { font-size: 26px; font-weight: 800; letter-spacing: -.4px; }
+header h1 em { font-style: normal; color: var(--accent); }
+header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.links { display: flex; gap: 8px; flex-wrap: wrap; }
+.links a {
+  padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text); font-size: 13px; font-weight: 500;
+  text-decoration: none;
+}
+.links a:hover { border-color: var(--accent); color: var(--accent); }
+.links a.active { background: rgba(34,211,238,.12); border-color: var(--accent); color: var(--accent); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 18px;
+}
+@media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+
+.sidebar {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px;
+  height: fit-content; position: sticky; top: 12px;
+}
+@media (max-width: 1100px) { .sidebar { position: static; } }
+
+.sidebar h2 {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--muted); margin-bottom: 14px; font-weight: 700;
+}
+.var-block {
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px; margin-bottom: 10px;
+}
+.var-block label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; color: var(--muted); margin-bottom: 6px; gap: 8px;
+}
+.var-block label strong { color: var(--text); font-size: 13px; font-weight: 600; }
+.var-block label .val {
+  font-family: 'JetBrains Mono', monospace; color: var(--accent);
+  font-weight: 600; font-size: 13px;
+}
+.var-block input[type=range] {
+  width: 100%; accent-color: var(--accent); cursor: pointer;
+}
+.var-row {
+  display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center;
+}
+.var-row input[type=number], .var-row select, .search-inp, .sel {
+  width: 100%; background: var(--input); border: 1px solid var(--line);
+  border-radius: 8px; color: var(--text); padding: 8px 10px;
+  font: 500 13px/1.2 'JetBrains Mono', monospace; outline: none;
+}
+.sel, select { font-family: 'DM Sans', sans-serif; }
+.var-row input:focus, .search-inp:focus, .sel:focus { border-color: var(--accent); }
+.hint { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+
+.formula-box {
+  background: #0a1020; border: 1px dashed var(--line); border-radius: 10px;
+  padding: 12px; margin: 12px 0; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: #9fb4d0; line-height: 1.55;
+}
+.formula-box b { color: var(--accent); font-weight: 600; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+button.btn {
+  flex: 1; min-width: 120px; padding: 10px 12px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--panel2); color: var(--text);
+  font: 600 13px 'DM Sans', sans-serif; cursor: pointer; transition: .15s;
+}
+button.btn:hover { border-color: var(--accent); color: var(--accent); }
+button.btn.primary {
+  background: linear-gradient(135deg, #0891b2, #22d3ee); color: #042f2e; border: none;
+}
+button.btn.danger:hover { border-color: var(--rose); color: var(--rose); }
+
+.main { min-width: 0; }
+.tabs {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  background: var(--panel); padding: 5px; border-radius: 12px; border: 1px solid var(--line);
+  width: fit-content; max-width: 100%;
+}
+.tab {
+  padding: 9px 16px; border: none; border-radius: 9px; cursor: pointer;
+  background: transparent; color: var(--muted); font: 600 13px 'DM Sans', sans-serif;
+}
+.tab.active {
+  background: linear-gradient(135deg, #0891b2, #22d3ee); color: #042f2e;
+}
+.kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+.kpi {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px; position: relative; overflow: hidden;
+}
+.kpi::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.kpi:nth-child(1)::before { background: var(--accent); }
+.kpi:nth-child(2)::before { background: var(--green); }
+.kpi:nth-child(3)::before { background: var(--amber); }
+.kpi:nth-child(4)::before { background: var(--violet); }
+.kpi:nth-child(5)::before { background: var(--rose); }
+.kpi .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.kpi .delta { font-size: 12px; margin-top: 4px; font-weight: 600; }
+.delta.up { color: var(--rose); }
+.delta.down { color: var(--green); }
+.delta.same { color: var(--muted); }
+
+.charts {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 14px;
+}
+@media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+}
+.card h3 { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+.chart-box { height: 260px; position: relative; }
+
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center;
+}
+.search-inp { flex: 1; min-width: 180px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  border-radius: 20px; background: rgba(34,211,238,.1); color: var(--accent);
+  font-size: 12px; font-weight: 600;
+}
+
+.table-wrap {
+  overflow: auto; border: 1px solid var(--line); border-radius: 12px;
+  max-height: 540px; background: var(--panel);
+}
+table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1100px; }
+th {
+  position: sticky; top: 0; z-index: 2; background: var(--panel2);
+  color: var(--muted); text-transform: uppercase; letter-spacing: .3px;
+  font-size: 10px; padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+td { padding: 7px 8px; border-bottom: 1px solid rgba(42,54,80,.5); white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+tr:hover td { background: rgba(34,211,238,.04); }
+tr.changed td { background: rgba(251,191,36,.06); }
+input.cell {
+  width: 84px; background: var(--input); border: 1px solid transparent;
+  border-radius: 6px; color: var(--accent2); padding: 4px 6px;
+  font: 500 11px 'JetBrains Mono', monospace; text-align: right;
+}
+input.cell:hover { border-color: var(--line); }
+input.cell:focus { border-color: var(--accent); outline: none; background: #0a1428; }
+input.cell.dirty { color: var(--amber); border-color: rgba(251,191,36,.4); }
+.out { font-weight: 600; }
+.out.changed { color: var(--amber); }
+.muted { color: var(--muted); }
+.note {
+  margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(34,211,238,.06); border: 1px solid rgba(34,211,238,.15);
+  font-size: 12px; color: var(--muted); line-height: 1.45;
+}
+.pick {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.chip {
+  padding: 6px 10px; border-radius: 20px; border: 1px solid var(--line);
+  background: var(--panel2); color: var(--muted); font-size: 12px; cursor: pointer;
+}
+.chip.on { border-color: var(--accent); color: var(--accent); background: rgba(34,211,238,.1); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Калькулятор <em>ППУ-труб</em></h1>
+      <p>Визуальный пересчёт прайса · замена переменных · данные из 9999.html</p>
+    </div>
+    <div class="links">
+      <a href="index.html">Дашборд</a>
+      <a class="active" href="calculator.html">Калькулятор</a>
+      <a href="9999.html">Исходный прайс</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Переменные</h2>
+
+      <div class="var-block">
+        <label><strong>Режим оболочки</strong></div>
+        <select id="mode" class="sel">
+          <option value="pe">ПЭ-оболочка</option>
+          <option value="oz">ОЦ-оболочка</option>
+          <option value="steel">Только сталь</option>
+        </select>
+        <div class="hint">Какой прайс пересчитывать</div>
+      </div>
+
+      <div class="var-block" data-for="shell">
+        <label><strong>Ставка ППУ</strong> <span class="val" id="v_ppu">350</span> ₽/кг</label>
+        <div class="var-row">
+          <input type="range" id="ppu_rate" min="100" max="800" step="1" value="350">
+          <input type="number" id="ppu_rate_n" min="1" step="1" value="350">
+        </div>
+        <div class="hint">Стоимость ППУ = масса × ставка</div>
+      </div>
+
+      <div class="var-block">
+        <label><strong>Множитель стали</strong> <span class="val" id="v_steel">100%</span></label>
+        <div class="var-row">
+          <input type="range" id="steel_mult" min="50" max="200" step="1" value="100">
+          <input type="number" id="steel_mult_n" min="1" step="1" value="100">
+        </div>
+        <div class="hint">Цена трубы за тонну × множитель</div>
+      </div>
+
+      <div class="var-block" data-for="shell">
+        <label><strong>Множитель оболочки</strong> <span class="val" id="v_shell">100%</span></label>
+        <div class="var-row">
+          <input type="range" id="shell_mult" min="50" max="200" step="1" value="100">
+          <input type="number" id="shell_mult_n" min="1" step="1" value="100">
+        </div>
+      </div>
+
+      <div class="var-block" data-for="shell">
+        <label><strong>Множитель центрирующих</strong> <span class="val" id="v_cent">100%</span></label>
+        <div class="var-row">
+          <input type="range" id="cent_mult" min="0" max="200" step="1" value="100">
+          <input type="number" id="cent_mult_n" min="0" step="1" value="100">
+        </div>
+      </div>
+
+      <div class="var-block" data-for="shell">
+        <label><strong>Сигнальный провод</strong> <span class="val" id="v_wire">базовый</span></label>
+        <div class="var-row">
+          <select id="wire_mode" class="sel">
+            <option value="base">Как в прайсе</option>
+            <option value="fixed">Фикс. цена</option>
+            <option value="mult">Множитель</option>
+          </select>
+          <input type="number" id="wire_val" value="75" step="1">
+        </div>
+        <div class="hint" id="wire_hint">Оставить значения из строк</div>
+      </div>
+
+      <div class="var-block" data-for="shell">
+        <label><strong>Маржа</strong> <span class="val" id="v_margin">базовая</span></label>
+        <div class="var-row">
+          <select id="margin_mode" class="sel">
+            <option value="base">Фикс. из прайса</option>
+            <option value="pct">% от затрат</option>
+            <option value="mult">Множитель фикс.</option>
+          </select>
+          <input type="number" id="margin_val" value="100" step="0.1">
+        </div>
+        <div class="hint" id="margin_hint">margin_add × 100% (по диаметру)</div>
+      </div>
+
+      <div class="var-block" data-for="steel">
+        <label><strong>Множитель сварки/БШ</strong> <span class="val" id="v_svc">100%</span></label>
+        <div class="var-row">
+          <input type="range" id="svc_mult" min="0" max="200" step="1" value="100">
+          <input type="number" id="svc_mult_n" min="0" step="1" value="100">
+        </div>
+      </div>
+
+      <div class="formula-box" id="formulaBox"></div>
+
+      <div class="btn-row">
+        <button class="btn primary" id="btnApply">Пересчитать</button>
+        <button class="btn danger" id="btnReset">Сброс</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnResetRows">Сброс строк</button>
+        <button class="btn" id="btnExport">Экспорт CSV</button>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-mode="pe">ПЭ-оболочка</button>
+        <button class="tab" data-mode="oz">ОЦ-оболочка</button>
+        <button class="tab" data-mode="steel">Сталь</button>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="charts">
+        <div class="card">
+          <h3 id="chart1Title">Цена с маржой — пересчёт vs база</h3>
+          <div class="chart-box"><canvas id="chartCompare"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Структура средних затрат</h3>
+          <div class="chart-box"><canvas id="chartStruct"></canvas></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-inp" id="search" placeholder="Поиск по диаметру…">
+        <span class="badge" id="changedBadge">изменено: 0</span>
+        <select class="sel" id="sortBy" style="width:auto;min-width:180px">
+          <option value="name">Сортировка: диаметр</option>
+          <option value="margin_desc">С маржой ↓</option>
+          <option value="delta_desc">Изменение ↓</option>
+          <option value="cost_desc">Затраты ↓</option>
+        </select>
+      </div>
+
+      <div class="pick" id="presets">
+        <span class="chip" data-preset="steel115">Сталь +15%</span>
+        <span class="chip" data-preset="ppu400">ППУ 400 ₽/кг</span>
+        <span class="chip" data-preset="shell90">Оболочка −10%</span>
+        <span class="chip" data-preset="margin20">Маржа 20%</span>
+        <span class="chip" data-preset="wire100">Провод 100 ₽</span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="grid">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note" id="note">
+        Жёлтые ячейки — изменённые переменные строки. Глобальные множители применяются ко всем позициям.
+        Формула: <b>сталь</b> = вес × цена_т / 1000; <b>ППУ</b> = масса × ставка; <b>затраты</b> = сталь + ППУ + центры + оболочка + провод; <b>с маржой</b> = затраты + маржа.
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const RAW = {"steel": [{"n": "Ду25/125", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "Ду25/140", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "Ду32/125", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "Ду32/140", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "Ду40/125", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "Ду40/140", "ton": 63000.0, "weld": 250.0, "bsh": 300.0}, {"n": "57/125", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "57/140", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "76/140", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "76/160", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "89/160", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "89/180", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "108/180", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "108/200", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "114/200", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "114/225", "ton": 60000.0, "weld": 250.0, "bsh": 300.0}, {"n": "133/225", "ton": 62000.0, "weld": 250.0, "bsh": 300.0}, {"n": "133/250", "ton": 62000.0, "weld": 250.0, "bsh": 300.0}, {"n": "159/250", "ton": 62000.0, "weld": 400.0, "bsh": 450.0}, {"n": "159/280", "ton": 62000.0, "weld": 400.0, "bsh": 450.0}, {"n": "219/315", "ton": 67000.0, "weld": 600.0, "bsh": 700.0}, {"n": "219/355", "ton": 67000.0, "weld": 600.0, "bsh": 700.0}, {"n": "273/400", "ton": 74000.0, "weld": 700.0, "bsh": 800.0}, {"n": "273/450", "ton": 74000.0, "weld": 700.0, "bsh": 800.0}, {"n": "325/450", "ton": 77000.0, "weld": 700.0, "bsh": 800.0}, {"n": "325/500", "ton": 77000.0, "weld": 700.0, "bsh": 800.0}, {"n": "377/500", "ton": 86000.0, "weld": 800.0, "bsh": 1000.0}, {"n": "377/560", "ton": 86000.0, "weld": 800.0, "bsh": 1000.0}, {"n": "426/560", "ton": 83000.0, "weld": 800.0, "bsh": 1000.0}, {"n": "426/630", "ton": 83000.0, "weld": 800.0, "bsh": 1000.0}, {"n": "530/710", "ton": 95000.0, "weld": 1000.0, "bsh": null}, {"n": "630/800", "ton": 140000.0, "weld": 1500.0, "bsh": null}, {"n": "720/900", "ton": 140000.0, "weld": 2500.0, "bsh": null}, {"n": "820/1000", "ton": 140000.0, "weld": 2500.0, "bsh": null}, {"n": "820/1100", "ton": 140000.0, "weld": 2500.0, "bsh": null}, {"n": "920/1100", "ton": 160000.0, "weld": 2500.0, "bsh": null}, {"n": "920/1200", "ton": 160000.0, "weld": 2500.0, "bsh": null}, {"n": "1020/1200", "ton": 142000.0, "weld": 2500.0, "bsh": null}, {"n": "1220/1425", "ton": 142000.0, "weld": 6000.0, "bsh": null}, {"n": "1420/1600", "ton": 160000.0, "weld": 8000.0, "bsh": null}], "pe": [{"n": "Ду25/125", "w": 2.391, "ton": 71000.0, "ppu_m": 1.2, "centers": 23.25, "shell": 192.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду25/140", "w": 2.391, "ton": 71000.0, "ppu_m": 1.29, "centers": 23.25, "shell": 253.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду32/125", "w": 3.086, "ton": 70000.0, "ppu_m": 1.01, "centers": 23.25, "shell": 192.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду32/140", "w": 3.086, "ton": 70000.0, "ppu_m": 1.1, "centers": 23.25, "shell": 253.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду40/125", "w": 3.841, "ton": 70000.0, "ppu_m": 0.94, "centers": 23.25, "shell": 192.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду40/140", "w": 3.841, "ton": 70000.0, "ppu_m": 1.01, "centers": 23.25, "shell": 253.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "57/125", "w": 4.618, "ton": 71500.0, "ppu_m": 0.843, "centers": 27.24, "shell": 192.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "57/140", "w": 4.618, "ton": 71500.0, "ppu_m": 1.005, "centers": 27.3, "shell": 253.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "76/140", "w": 6.258, "ton": 71500.0, "ppu_m": 0.891, "centers": 27.3, "shell": 253.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "76/160", "w": 6.258, "ton": 71500.0, "ppu_m": 1.384, "centers": 27.3, "shell": 291.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "89/160", "w": 7.38, "ton": 71500.0, "ppu_m": 1.203, "centers": 31.2, "shell": 291.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "89/180", "w": 7.38, "ton": 71500.0, "ppu_m": 1.492, "centers": 31.2, "shell": 327.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "108/180", "w": 10.259, "ton": 71500.0, "ppu_m": 1.421, "centers": 35.4, "shell": 327.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "108/200", "w": 10.259, "ton": 71500.0, "ppu_m": 1.782, "centers": 35.4, "shell": 386.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "114/200", "w": 10.851, "ton": 71500.0, "ppu_m": 1.78, "centers": 37.74, "shell": 386.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "114/225", "w": 10.851, "ton": 71500.0, "ppu_m": 2.183, "centers": 54.0, "shell": 479.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "133/225", "w": 12.725, "ton": 71500.0, "ppu_m": 2.0, "centers": 52.0, "shell": 479.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "133/250", "w": 12.725, "ton": 71500.0, "ppu_m": 2.891, "centers": 54.0, "shell": 595.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "159/250", "w": 17.146, "ton": 71500.0, "ppu_m": 2.048, "centers": 52.0, "shell": 595.0, "wire": 75.0, "margin_add": 400.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "159/280", "w": 17.146, "ton": 71500.0, "ppu_m": 3.028, "centers": 54.0, "shell": 745.0, "wire": 75.0, "margin_add": 400.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "219/315", "w": 31.517, "ton": 72000.0, "ppu_m": 3.112, "centers": 78.0, "shell": 927.0, "wire": 75.0, "margin_add": 600.0, "weld_add": 50.0, "bsh_add": 150.0}, {"n": "219/355", "w": 31.517, "ton": 72000.0, "ppu_m": 4.455, "centers": 87.0, "shell": 1193.0, "wire": 75.0, "margin_add": 600.0, "weld_add": 50.0, "bsh_add": 150.0}, {"n": "273/400", "w": 45.92, "ton": 74000.0, "ppu_m": 4.9, "centers": 81.0, "shell": 1359.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 100.0, "bsh_add": 200.0}, {"n": "273/450", "w": 45.92, "ton": 74000.0, "ppu_m": 7.11, "centers": 117.0, "shell": 1556.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 100.0, "bsh_add": 200.0}, {"n": "325/450", "w": 54.896, "ton": 74000.0, "ppu_m": 5.79, "centers": 108.0, "shell": 1556.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 150.0, "bsh_add": 250.0}, {"n": "325/500", "w": 54.896, "ton": 74000.0, "ppu_m": 7.906, "centers": 157.0, "shell": 1911.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 150.0, "bsh_add": 250.0}, {"n": "377/500", "w": 63.873, "ton": 79000.0, "ppu_m": 6.507, "centers": 108.0, "shell": 1911.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "377/560", "w": 63.873, "ton": 79000.0, "ppu_m": 10.625, "centers": 158.0, "shell": 2407.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "426/560", "w": 72.332, "ton": 76000.0, "ppu_m": 8.3, "centers": 135.0, "shell": 2407.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "426/630", "w": 72.332, "ton": 76000.0, "ppu_m": 11.05, "centers": 160.0, "shell": 3061.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "530/710", "w": 90.286, "ton": 80000.0, "ppu_m": 13.5, "centers": 254.0, "shell": 3895.0, "wire": 100.0, "margin_add": 1000.0, "weld_add": 150.0, "bsh_add": null}, {"n": "530/800", "w": 115.638, "ton": 80000.0, "ppu_m": 21.19, "centers": 304.0, "shell": 4921.0, "wire": 100.0, "margin_add": 1000.0, "weld_add": 150.0, "bsh_add": null}, {"n": "630/800", "w": 122.716, "ton": 106000.0, "ppu_m": 13.5, "centers": 304.0, "shell": 4921.0, "wire": 100.0, "margin_add": 1500.0, "weld_add": 150.0, "bsh_add": null}, {"n": "720/900", "w": 140.472, "ton": 106000.0, "ppu_m": 17.132, "centers": 347.0, "shell": 6213.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "820/1000", "w": 180.004, "ton": 106000.0, "ppu_m": 18.9, "centers": 496.0, "shell": 7638.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "820/1100", "w": 180.004, "ton": 106000.0, "ppu_m": 32.4, "centers": 679.0, "shell": 9358.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "920/1100", "w": 224.42, "ton": 120000.0, "ppu_m": 20.67, "centers": 546.0, "shell": 9358.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "920/1200", "w": 224.42, "ton": 120000.0, "ppu_m": 35.505, "centers": 747.0, "shell": 11860.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "1020/1200", "w": 273.718, "ton": 105000.0, "ppu_m": 22.41, "centers": 632.0, "shell": 11860.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "1220/1425", "w": 327.973, "ton": 105000.0, "ppu_m": 26.5, "centers": 838.0, "shell": 0, "wire": 100.0, "margin_add": 6000.0, "weld_add": null, "bsh_add": null}, {"n": "1420/1600", "w": 416.681, "ton": 125000.0, "ppu_m": 27.67, "centers": 1026.0, "shell": 0, "wire": 100.0, "margin_add": 8000.0, "weld_add": null, "bsh_add": null}], "oz": [{"n": "Ду25/125", "w": 2.391, "ton": 71000.0, "ppu_m": 1.2, "centers": 23.25, "shell": 252.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду25/140", "w": 2.391, "ton": 71000.0, "ppu_m": 1.29, "centers": 23.25, "shell": 280.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду32/125", "w": 3.086, "ton": 70000.0, "ppu_m": 1.01, "centers": 23.25, "shell": 252.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду32/140", "w": 3.086, "ton": 70000.0, "ppu_m": 1.1, "centers": 23.25, "shell": 280.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду40/125", "w": 3.841, "ton": 70000.0, "ppu_m": 0.94, "centers": 23.25, "shell": 252.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "Ду40/140", "w": 3.841, "ton": 70000.0, "ppu_m": 1.01, "centers": 23.25, "shell": 280.0, "wire": 75.0, "margin_add": 250.0, "weld_add": null, "bsh_add": 50.0}, {"n": "57/125", "w": 4.618, "ton": 71500.0, "ppu_m": 0.843, "centers": 27.24, "shell": 252.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "57/140", "w": 4.618, "ton": 71500.0, "ppu_m": 1.005, "centers": 27.3, "shell": 280.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "76/140", "w": 6.258, "ton": 71500.0, "ppu_m": 0.891, "centers": 27.3, "shell": 280.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "76/160", "w": 6.258, "ton": 71500.0, "ppu_m": 1.384, "centers": 27.3, "shell": 322.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "89/160", "w": 7.38, "ton": 71500.0, "ppu_m": 1.203, "centers": 31.2, "shell": 322.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "89/180", "w": 7.38, "ton": 71500.0, "ppu_m": 1.492, "centers": 31.2, "shell": 364.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "108/180", "w": 10.259, "ton": 71500.0, "ppu_m": 1.421, "centers": 35.4, "shell": 364.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "108/200", "w": 10.259, "ton": 71500.0, "ppu_m": 1.782, "centers": 35.4, "shell": 406.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "114/200", "w": 10.851, "ton": 71500.0, "ppu_m": 1.78, "centers": 37.74, "shell": 406.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "114/225", "w": 10.851, "ton": 71500.0, "ppu_m": 2.183, "centers": 54.0, "shell": 462.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "133/225", "w": 12.725, "ton": 71500.0, "ppu_m": 2.0, "centers": 48.0, "shell": 462.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "133/250", "w": 12.725, "ton": 71500.0, "ppu_m": 2.891, "centers": 54.0, "shell": 714.0, "wire": 75.0, "margin_add": 250.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "159/250", "w": 17.146, "ton": 71500.0, "ppu_m": 2.048, "centers": 48.0, "shell": 714.0, "wire": 75.0, "margin_add": 400.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "159/280", "w": 17.146, "ton": 71500.0, "ppu_m": 3.028, "centers": 54.0, "shell": 798.0, "wire": 75.0, "margin_add": 400.0, "weld_add": 50.0, "bsh_add": 100.0}, {"n": "219/315", "w": 31.517, "ton": 72000.0, "ppu_m": 3.112, "centers": 78.0, "shell": 896.0, "wire": 75.0, "margin_add": 600.0, "weld_add": 50.0, "bsh_add": 150.0}, {"n": "219/355", "w": 31.517, "ton": 72000.0, "ppu_m": 4.455, "centers": 87.0, "shell": 1008.0, "wire": 75.0, "margin_add": 600.0, "weld_add": 50.0, "bsh_add": 150.0}, {"n": "273/400", "w": 45.92, "ton": 74000.0, "ppu_m": 4.9, "centers": 87.0, "shell": 1134.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 100.0, "bsh_add": 200.0}, {"n": "273/450", "w": 45.92, "ton": 74000.0, "ppu_m": 7.11, "centers": 122.0, "shell": 1288.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 100.0, "bsh_add": 200.0}, {"n": "325/450", "w": 54.896, "ton": 74000.0, "ppu_m": 5.79, "centers": 116.0, "shell": 1288.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 150.0, "bsh_add": 250.0}, {"n": "325/500", "w": 54.896, "ton": 74000.0, "ppu_m": 7.906, "centers": 158.0, "shell": 1428.0, "wire": 75.0, "margin_add": 700.0, "weld_add": 150.0, "bsh_add": 250.0}, {"n": "377/500", "w": 63.873, "ton": 79000.0, "ppu_m": 6.507, "centers": 116.0, "shell": 1428.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "377/560", "w": 63.873, "ton": 79000.0, "ppu_m": 10.625, "centers": 163.0, "shell": 2282.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "426/560", "w": 72.332, "ton": 76000.0, "ppu_m": 8.3, "centers": 145.0, "shell": 2282.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "426/630", "w": 72.332, "ton": 76000.0, "ppu_m": 11.05, "centers": 218.0, "shell": 2562.0, "wire": 75.0, "margin_add": 800.0, "weld_add": 150.0, "bsh_add": 350.0}, {"n": "530/675", "w": 90.286, "ton": 80000.0, "ppu_m": 10.2, "centers": 228.0, "shell": 2744.0, "wire": 100.0, "margin_add": 1000.0, "weld_add": 150.0, "bsh_add": null}, {"n": "530/710", "w": 90.286, "ton": 80000.0, "ppu_m": 13.5, "centers": 264.0, "shell": 2884.0, "wire": 100.0, "margin_add": 1000.0, "weld_add": 150.0, "bsh_add": null}, {"n": "530/775", "w": 90.286, "ton": 80000.0, "ppu_m": 20.08, "centers": 282.0, "shell": 3150.0, "wire": 100.0, "margin_add": 1000.0, "weld_add": 150.0, "bsh_add": null}, {"n": "630/775", "w": 122.716, "ton": 106000.0, "ppu_m": 12.0, "centers": 282.0, "shell": 3150.0, "wire": 100.0, "margin_add": 1500.0, "weld_add": 150.0, "bsh_add": null}, {"n": "630/800", "w": 122.716, "ton": 106000.0, "ppu_m": 13.5, "centers": 322.0, "shell": 3262.0, "wire": 100.0, "margin_add": 1500.0, "weld_add": 150.0, "bsh_add": null}, {"n": "630/875", "w": 122.716, "ton": 106000.0, "ppu_m": 23.16, "centers": 379.0, "shell": 3556.0, "wire": 100.0, "margin_add": 1500.0, "weld_add": 150.0, "bsh_add": null}, {"n": "720/875", "w": 140.472, "ton": 106000.0, "ppu_m": 15.53, "centers": 379.0, "shell": 3556.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "720/900", "w": 140.472, "ton": 106000.0, "ppu_m": 17.132, "centers": 379.0, "shell": 3668.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "720/975", "w": 140.472, "ton": 106000.0, "ppu_m": 27.14, "centers": 379.0, "shell": 3980.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "820/1000", "w": 180.004, "ton": 106000.0, "ppu_m": 18.9, "centers": 542.0, "shell": 4074.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "820/1075", "w": 180.004, "ton": 106000.0, "ppu_m": 30.35, "centers": 560.0, "shell": 4385.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "820/1100", "w": 180.004, "ton": 106000.0, "ppu_m": 32.4, "centers": 560.0, "shell": 4704.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "920/1100", "w": 224.42, "ton": 120000.0, "ppu_m": 20.67, "centers": 596.0, "shell": 4704.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "920/1200", "w": 224.42, "ton": 120000.0, "ppu_m": 35.505, "centers": 680.0, "shell": 5130.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "1020/1175", "w": 273.718, "ton": 105000.0, "ppu_m": 20.01, "centers": 632.0, "shell": 5027.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "1020/1200", "w": 273.718, "ton": 105000.0, "ppu_m": 22.41, "centers": 691.0, "shell": 5130.0, "wire": 100.0, "margin_add": 2500.0, "weld_add": 250.0, "bsh_add": null}, {"n": "1220/1400", "w": 327.973, "ton": 105000.0, "ppu_m": 25.8, "centers": 940.0, "shell": 6267.0, "wire": 100.0, "margin_add": 6000.0, "weld_add": 350.0, "bsh_add": null}, {"n": "1220/1425", "w": 327.973, "ton": 105000.0, "ppu_m": 28.0, "centers": 940.0, "shell": 7835.0, "wire": 100.0, "margin_add": 6000.0, "weld_add": 350.0, "bsh_add": null}, {"n": "1425/1600", "w": 383.585, "ton": 125000.0, "ppu_m": 31.2, "centers": 1209.0, "shell": 8465.0, "wire": 100.0, "margin_add": 8000.0, "weld_add": 450.0, "bsh_add": null}], "defaults": {"ppu_rate": 350}};
+
+const state = {
+  mode: 'pe',
+  globals: {
+    ppu_rate: 350,
+    steel_mult: 100,
+    shell_mult: 100,
+    cent_mult: 100,
+    wire_mode: 'base',
+    wire_val: 75,
+    margin_mode: 'base',
+    margin_val: 100,
+    svc_mult: 100,
+  },
+  overrides: { pe: {}, oz: {}, steel: {} },
+  search: '',
+  sortBy: 'name',
+};
+
+let chartCompare, chartStruct;
+Chart.defaults.color = '#8fa0b8';
+Chart.defaults.borderColor = 'rgba(42,54,80,.55)';
+Chart.defaults.font.family = 'DM Sans';
+
+const $ = id => document.getElementById(id);
+const fmt = n => n == null || Number.isNaN(n) ? '—' : Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+const round2 = n => Math.round(n * 100) / 100;
+
+function cloneBase(mode) {
+  return RAW[mode].map(r => ({ ...r }));
+}
+
+function wireOf(row) {
+  const g = state.globals;
+  if (g.wire_mode === 'fixed') return Number(g.wire_val) || 0;
+  if (g.wire_mode === 'mult') return round2((row.wire || 0) * (Number(g.wire_val) || 0) / 100);
+  return row.wire || 0;
+}
+
+function marginAddOf(row, cost) {
+  const g = state.globals;
+  if (g.margin_mode === 'pct') return round2(cost * (Number(g.margin_val) || 0) / 100);
+  if (g.margin_mode === 'mult') return round2((row.margin_add || 0) * (Number(g.margin_val) || 0) / 100);
+  return row.margin_add || 0;
+}
+
+function computeShell(row, mode) {
+  const g = state.globals;
+  const ov = state.overrides[mode][row.n] || {};
+  const ton = round2((ov.ton != null ? ov.ton : row.ton) * g.steel_mult / 100);
+  const w = ov.w != null ? ov.w : row.w;
+  const ppu_m = ov.ppu_m != null ? ov.ppu_m : row.ppu_m;
+  const ppu_rate = ov.ppu_rate != null ? ov.ppu_rate : g.ppu_rate;
+  const centers = round2((ov.centers != null ? ov.centers : row.centers) * g.cent_mult / 100);
+  const shell = round2((ov.shell != null ? ov.shell : row.shell) * g.shell_mult / 100);
+  const wire = ov.wire != null ? ov.wire : wireOf(row);
+  const steel = round2(w * ton / 1000);
+  const ppu = round2(ppu_m * ppu_rate);
+  const cost = round2(steel + ppu + centers + shell + wire);
+  const mAdd = ov.margin_add != null ? ov.margin_add : marginAddOf(row, cost);
+  const withMargin = round2(cost + mAdd);
+  const weldAdd = ov.weld_add != null ? ov.weld_add : row.weld_add;
+  const bshAdd = ov.bsh_add != null ? ov.bsh_add : row.bsh_add;
+  const weld = weldAdd == null ? null : round2(withMargin + weldAdd);
+  const bsh = bshAdd == null ? null : round2(withMargin + bshAdd);
+
+  // baseline with defaults
+  const baseSteel = round2(row.w * row.ton / 1000);
+  const basePpu = round2(row.ppu_m * 350);
+  const baseCost = round2(baseSteel + basePpu + row.centers + row.shell + row.wire);
+  const baseMargin = round2(baseCost + row.margin_add);
+
+  return {
+    n: row.n, w, ton, ppu_m, ppu_rate, centers, shell, wire,
+    steel, ppu, cost, margin_add: mAdd, withMargin, weld, bsh,
+    baseMargin, delta: round2(withMargin - baseMargin),
+    dirty: Object.keys(ov).length > 0
+  };
+}
+
+function computeSteel(row) {
+  const g = state.globals;
+  const ov = state.overrides.steel[row.n] || {};
+  const ton = round2((ov.ton != null ? ov.ton : row.ton) * g.steel_mult / 100);
+  const weld = row.weld == null && ov.weld == null ? null : round2((ov.weld != null ? ov.weld : row.weld) * g.svc_mult / 100);
+  const bsh = row.bsh == null && ov.bsh == null ? null : round2((ov.bsh != null ? ov.bsh : row.bsh) * g.svc_mult / 100);
+  return {
+    n: row.n, ton, weld, bsh,
+    baseTon: row.ton,
+    delta: round2(ton - row.ton),
+    dirty: Object.keys(ov).length > 0
+  };
+}
+
+function rowsComputed() {
+  if (state.mode === 'steel') return RAW.steel.map(computeSteel);
+  return RAW[state.mode].map(r => computeShell(r, state.mode));
+}
+
+function filteredRows() {
+  let rows = rowsComputed();
+  const q = state.search.trim().toLowerCase();
+  if (q) rows = rows.filter(r => r.n.toLowerCase().includes(q));
+  const s = state.sortBy;
+  if (state.mode === 'steel') {
+    if (s === 'margin_desc' || s === 'cost_desc') rows.sort((a,b) => b.ton - a.ton);
+    else if (s === 'delta_desc') rows.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
+    else rows.sort((a,b) => a.n.localeCompare(b.n, 'ru', { numeric: true }));
+  } else {
+    if (s === 'margin_desc') rows.sort((a,b) => b.withMargin - a.withMargin);
+    else if (s === 'cost_desc') rows.sort((a,b) => b.cost - a.cost);
+    else if (s === 'delta_desc') rows.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
+    else rows.sort((a,b) => a.n.localeCompare(b.n, 'ru', { numeric: true }));
+  }
+  return rows;
+}
+
+function syncModeUI() {
+  const shell = state.mode !== 'steel';
+  document.querySelectorAll('[data-for="shell"]').forEach(el => el.style.display = shell ? '' : 'none');
+  document.querySelectorAll('[data-for="steel"]').forEach(el => el.style.display = shell ? 'none' : '');
+  $('mode').value = state.mode;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === state.mode));
+  $('formulaBox').innerHTML = shell
+    ? `<div><b>сталь</b> = вес × (цена_т × k_стали) / 1000</div>
+       <div><b>ППУ</b> = масса_ППУ × ставка_ППУ</div>
+       <div><b>затраты</b> = сталь + ППУ + центры×k + оболочка×k + провод</div>
+       <div><b>с маржой</b> = затраты + маржа</div>
+       <div><b>сварка/БШ</b> = с маржой + надбавка</div>`
+    : `<div><b>цена_т</b> = база × k_стали</div>
+       <div><b>сварка/БШ</b> = база × k_услуг</div>`;
+}
+
+function bindDual(rangeId, numId, onChange) {
+  const r = $(rangeId), n = $(numId);
+  const sync = from => {
+    const v = Number(from.value);
+    r.value = v; n.value = v; onChange(v);
+  };
+  r.addEventListener('input', () => sync(r));
+  n.addEventListener('input', () => sync(n));
+}
+
+function updateLabels() {
+  const g = state.globals;
+  $('v_ppu').textContent = g.ppu_rate;
+  $('v_steel').textContent = g.steel_mult + '%';
+  $('v_shell').textContent = g.shell_mult + '%';
+  $('v_cent').textContent = g.cent_mult + '%';
+  $('v_svc').textContent = g.svc_mult + '%';
+  if (g.wire_mode === 'base') { $('v_wire').textContent = 'базовый'; $('wire_hint').textContent = 'Оставить значения из строк'; }
+  else if (g.wire_mode === 'fixed') { $('v_wire').textContent = g.wire_val + ' ₽'; $('wire_hint').textContent = 'Одна цена провода для всех'; }
+  else { $('v_wire').textContent = '×' + g.wire_val + '%'; $('wire_hint').textContent = 'Множитель к базовому проводу'; }
+  if (g.margin_mode === 'base') { $('v_margin').textContent = 'базовая'; $('margin_hint').textContent = 'Фикс. надбавка из прайса по диаметру'; }
+  else if (g.margin_mode === 'pct') { $('v_margin').textContent = g.margin_val + '%'; $('margin_hint').textContent = 'Маржа = % от итоговых затрат'; }
+  else { $('v_margin').textContent = '×' + g.margin_val + '%'; $('margin_hint').textContent = 'Множитель к фикс. марже прайса'; }
+}
+
+function renderKPIs(rows) {
+  const el = $('kpis');
+  if (state.mode === 'steel') {
+    const avg = rows.reduce((a,r)=>a+r.ton,0)/rows.length;
+    const baseAvg = rows.reduce((a,r)=>a+r.baseTon,0)/rows.length;
+    const d = avg - baseAvg;
+    el.innerHTML = `
+      <div class="kpi"><div class="l">Позиций</div><div class="v">${rows.length}</div></div>
+      <div class="kpi"><div class="l">Мин. цена/т</div><div class="v">${fmt(Math.min(...rows.map(r=>r.ton)))}</div></div>
+      <div class="kpi"><div class="l">Макс. цена/т</div><div class="v">${fmt(Math.max(...rows.map(r=>r.ton)))}</div></div>
+      <div class="kpi"><div class="l">Средняя/т</div><div class="v">${fmt(avg)}</div>
+        <div class="delta ${d>0?'up':d<0?'down':'same'}">${d>0?'+':''}${fmt(d)} к базе</div></div>
+      <div class="kpi"><div class="l">Изменённых строк</div><div class="v">${rows.filter(r=>r.dirty).length}</div></div>`;
+    return;
+  }
+  const margins = rows.map(r => r.withMargin);
+  const bases = rows.map(r => r.baseMargin);
+  const avg = margins.reduce((a,b)=>a+b,0)/margins.length;
+  const baseAvg = bases.reduce((a,b)=>a+b,0)/bases.length;
+  const d = avg - baseAvg;
+  const sumDelta = rows.reduce((a,r)=>a+r.delta,0);
+  el.innerHTML = `
+    <div class="kpi"><div class="l">Позиций</div><div class="v">${rows.length}</div><div class="s">${state.mode === 'pe' ? 'ПЭ' : 'ОЦ'}</div></div>
+    <div class="kpi"><div class="l">Мин. с маржой</div><div class="v">${fmt(Math.min(...margins))}</div><div class="s">₽/п.м.</div></div>
+    <div class="kpi"><div class="l">Макс. с маржой</div><div class="v">${fmt(Math.max(...margins))}</div><div class="s">₽/п.м.</div></div>
+    <div class="kpi"><div class="l">Средняя цена</div><div class="v">${fmt(avg)}</div>
+      <div class="delta ${d>0?'up':d<0?'down':'same'}">${d>0?'+':''}${fmt(d)} к базе</div></div>
+    <div class="kpi"><div class="l">Суммарный сдвиг</div><div class="v">${fmt(sumDelta)}</div>
+      <div class="s">сумма Δ по строкам</div></div>`;
+}
+
+function renderCharts(rows) {
+  if (state.mode === 'steel') {
+    const labels = rows.map(r => r.n);
+    if (chartCompare) chartCompare.destroy();
+    chartCompare = new Chart($('chartCompare'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'База', data: rows.map(r => r.baseTon), borderColor: '#64748b', tension: .25, pointRadius: 2 },
+          { label: 'Пересчёт', data: rows.map(r => r.ton), borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,.12)', fill: true, tension: .25, pointRadius: 2 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 16, maxRotation: 45 } } } }
+    });
+    if (chartStruct) chartStruct.destroy();
+    chartStruct = new Chart($('chartStruct'), {
+      type: 'bar',
+      data: {
+        labels: rows.slice(0, 15).map(r => r.n),
+        datasets: [
+          { label: 'Сварка', data: rows.slice(0,15).map(r => r.weld || 0), backgroundColor: 'rgba(167,139,250,.75)' },
+          { label: 'БШ', data: rows.slice(0,15).map(r => r.bsh || 0), backgroundColor: 'rgba(251,191,36,.75)' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+    $('chart1Title').textContent = 'Цена стали за тонну — база vs пересчёт';
+    return;
+  }
+
+  const top = [...rows].sort((a,b) => b.withMargin - a.withMargin).slice(0, 18);
+  if (chartCompare) chartCompare.destroy();
+  chartCompare = new Chart($('chartCompare'), {
+    type: 'bar',
+    data: {
+      labels: top.map(r => r.n),
+      datasets: [
+        { label: 'База', data: top.map(r => r.baseMargin), backgroundColor: 'rgba(100,116,139,.65)', borderRadius: 4 },
+        { label: 'Пересчёт', data: top.map(r => r.withMargin), backgroundColor: 'rgba(34,211,238,.8)', borderRadius: 4 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxRotation: 45, maxTicksLimit: 18 } } } }
+  });
+
+  const avg = { steel:0, ppu:0, centers:0, shell:0, wire:0 };
+  rows.forEach(r => { avg.steel+=r.steel; avg.ppu+=r.ppu; avg.centers+=r.centers; avg.shell+=r.shell; avg.wire+=r.wire; });
+  const n = rows.length || 1;
+  Object.keys(avg).forEach(k => avg[k] /= n);
+  if (chartStruct) chartStruct.destroy();
+  chartStruct = new Chart($('chartStruct'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Сталь', 'ППУ', 'Центры', 'Оболочка', 'Провод'],
+      datasets: [{ data: [avg.steel, avg.ppu, avg.centers, avg.shell, avg.wire],
+        backgroundColor: ['#38bdf8','#22d3ee','#a78bfa','#fbbf24','#fb7185'], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+  $('chart1Title').textContent = 'Цена с маржой — пересчёт vs база (топ)';
+}
+
+function setOverride(mode, name, key, value) {
+  if (!state.overrides[mode][name]) state.overrides[mode][name] = {};
+  if (value === '' || value == null) {
+    delete state.overrides[mode][name][key];
+    if (!Object.keys(state.overrides[mode][name]).length) delete state.overrides[mode][name];
+  } else {
+    state.overrides[mode][name][key] = Number(value);
+  }
+}
+
+function cellInput(mode, name, key, current, base) {
+  const ov = state.overrides[mode][name] || {};
+  const dirty = ov[key] != null;
+  const val = dirty ? ov[key] : current;
+  return `<input class="cell${dirty?' dirty':''}" data-name="${name}" data-key="${key}" value="${val}" title="база: ${base}">`;
+}
+
+function renderTable(rows) {
+  const thead = document.querySelector('#grid thead');
+  const tbody = document.querySelector('#grid tbody');
+  const mode = state.mode;
+
+  if (mode === 'steel') {
+    thead.innerHTML = `<tr>
+      <th>Диаметр</th><th class="num">Цена/т (ред.)</th><th class="num">Итог/т</th>
+      <th class="num">Δ</th><th class="num">Сварка (ред.)</th><th class="num">Сварка</th>
+      <th class="num">БШ (ред.)</th><th class="num">БШ</th></tr>`;
+    tbody.innerHTML = rows.map(r => {
+      const base = RAW.steel.find(x => x.n === r.n);
+      return `<tr class="${r.dirty || Math.abs(r.delta)>0.01 ? 'changed':''}">
+        <td>${r.n}</td>
+        <td class="num">${cellInput('steel', r.n, 'ton', base.ton, base.ton)}</td>
+        <td class="num out ${Math.abs(r.delta)>0.01?'changed':''}">${fmt(r.ton)}</td>
+        <td class="num ${r.delta>0?'delta up':r.delta<0?'delta down':'muted'}">${r.delta>0?'+':''}${fmt(r.delta)}</td>
+        <td class="num">${base.weld==null?'—':cellInput('steel', r.n, 'weld', base.weld, base.weld)}</td>
+        <td class="num">${fmt(r.weld)}</td>
+        <td class="num">${base.bsh==null?'—':cellInput('steel', r.n, 'bsh', base.bsh, base.bsh)}</td>
+        <td class="num">${fmt(r.bsh)}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    thead.innerHTML = `<tr>
+      <th>Труба</th>
+      <th class="num">Вес</th>
+      <th class="num">Цена/т</th>
+      <th class="num">Масса ППУ</th>
+      <th class="num">Ставка ППУ</th>
+      <th class="num">Центры</th>
+      <th class="num">Оболочка</th>
+      <th class="num">Провод</th>
+      <th class="num">Сталь</th>
+      <th class="num">ППУ</th>
+      <th class="num">Затраты</th>
+      <th class="num">Маржа+</th>
+      <th class="num">С маржой</th>
+      <th class="num">Δ к базе</th>
+      <th class="num">Сварка</th>
+      <th class="num">БШ</th>
+    </tr>`;
+    tbody.innerHTML = rows.map(r => {
+      const base = RAW[mode].find(x => x.n === r.n);
+      return `<tr class="${r.dirty || Math.abs(r.delta)>0.01 ? 'changed':''}">
+        <td>${r.n}</td>
+        <td class="num">${cellInput(mode, r.n, 'w', base.w, base.w)}</td>
+        <td class="num">${cellInput(mode, r.n, 'ton', base.ton, base.ton)}</td>
+        <td class="num">${cellInput(mode, r.n, 'ppu_m', base.ppu_m, base.ppu_m)}</td>
+        <td class="num">${cellInput(mode, r.n, 'ppu_rate', state.globals.ppu_rate, 350)}</td>
+        <td class="num">${cellInput(mode, r.n, 'centers', base.centers, base.centers)}</td>
+        <td class="num">${cellInput(mode, r.n, 'shell', base.shell, base.shell)}</td>
+        <td class="num">${cellInput(mode, r.n, 'wire', base.wire, base.wire)}</td>
+        <td class="num">${fmt(r.steel)}</td>
+        <td class="num">${fmt(r.ppu)}</td>
+        <td class="num out">${fmt(r.cost)}</td>
+        <td class="num">${cellInput(mode, r.n, 'margin_add', base.margin_add, base.margin_add)}</td>
+        <td class="num out ${Math.abs(r.delta)>0.01?'changed':''}">${fmt(r.withMargin)}</td>
+        <td class="num ${r.delta>0?'delta up':r.delta<0?'delta down':'muted'}">${r.delta>0?'+':''}${fmt(r.delta)}</td>
+        <td class="num">${fmt(r.weld)}</td>
+        <td class="num">${fmt(r.bsh)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  tbody.querySelectorAll('input.cell').forEach(inp => {
+    inp.addEventListener('change', () => {
+      setOverride(mode, inp.dataset.name, inp.dataset.key, inp.value);
+      render();
+    });
+  });
+
+  const changed = Object.keys(state.overrides[mode]).length;
+  const gChanged = !(state.globals.ppu_rate===350 && state.globals.steel_mult===100 &&
+    state.globals.shell_mult===100 && state.globals.cent_mult===100 &&
+    state.globals.wire_mode==='base' && state.globals.margin_mode==='base' &&
+    state.globals.margin_val===100 && state.globals.svc_mult===100);
+  $('changedBadge').textContent = `изменено строк: ${changed}` + (gChanged ? ' · глобальные переменные' : '');
+}
+
+function render() {
+  syncModeUI();
+  updateLabels();
+  const rows = filteredRows();
+  renderKPIs(rows);
+  renderCharts(rows);
+  renderTable(rows);
+}
+
+function readGlobalsFromUI() {
+  const g = state.globals;
+  g.ppu_rate = Number($('ppu_rate').value);
+  g.steel_mult = Number($('steel_mult').value);
+  g.shell_mult = Number($('shell_mult').value);
+  g.cent_mult = Number($('cent_mult').value);
+  g.svc_mult = Number($('svc_mult').value);
+  g.wire_mode = $('wire_mode').value;
+  g.wire_val = Number($('wire_val').value);
+  g.margin_mode = $('margin_mode').value;
+  g.margin_val = Number($('margin_val').value);
+}
+
+function resetGlobals() {
+  state.globals = {
+    ppu_rate: 350, steel_mult: 100, shell_mult: 100, cent_mult: 100,
+    wire_mode: 'base', wire_val: 75, margin_mode: 'base', margin_val: 100, svc_mult: 100
+  };
+  $('ppu_rate').value = $('ppu_rate_n').value = 350;
+  $('steel_mult').value = $('steel_mult_n').value = 100;
+  $('shell_mult').value = $('shell_mult_n').value = 100;
+  $('cent_mult').value = $('cent_mult_n').value = 100;
+  $('svc_mult').value = $('svc_mult_n').value = 100;
+  $('wire_mode').value = 'base';
+  $('wire_val').value = 75;
+  $('margin_mode').value = 'base';
+  $('margin_val').value = 100;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+}
+
+function exportCSV() {
+  const rows = filteredRows();
+  let csv;
+  if (state.mode === 'steel') {
+    csv = 'Диаметр;Цена_т;Сварка;БШ;Дельта\n' + rows.map(r =>
+      [r.n, r.ton, r.weld ?? '', r.bsh ?? '', r.delta].join(';')).join('\n');
+  } else {
+    csv = 'Труба;Вес;Цена_т;ППУ_масса;Ставка_ППУ;Центры;Оболочка;Провод;Сталь;ППУ;Затраты;Маржа;С_маржой;Дельта;Сварка;БШ\n' +
+      rows.map(r => [r.n,r.w,r.ton,r.ppu_m,r.ppu_rate,r.centers,r.shell,r.wire,r.steel,r.ppu,r.cost,r.margin_add,r.withMargin,r.delta,r.weld??'',r.bsh??''].join(';')).join('\n');
+  }
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `calc_${state.mode}.csv`;
+  a.click();
+}
+
+function applyPreset(name) {
+  resetGlobals();
+  if (name === 'steel115') { state.globals.steel_mult = 115; $('steel_mult').value=$('steel_mult_n').value=115; }
+  if (name === 'ppu400') { state.globals.ppu_rate = 400; $('ppu_rate').value=$('ppu_rate_n').value=400; }
+  if (name === 'shell90') { state.globals.shell_mult = 90; $('shell_mult').value=$('shell_mult_n').value=90; }
+  if (name === 'margin20') { state.globals.margin_mode='pct'; state.globals.margin_val=20; $('margin_mode').value='pct'; $('margin_val').value=20; }
+  if (name === 'wire100') { state.globals.wire_mode='fixed'; state.globals.wire_val=100; $('wire_mode').value='fixed'; $('wire_val').value=100; }
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.preset === name));
+  render();
+}
+
+function init() {
+  bindDual('ppu_rate','ppu_rate_n', v => { state.globals.ppu_rate = v; render(); });
+  bindDual('steel_mult','steel_mult_n', v => { state.globals.steel_mult = v; render(); });
+  bindDual('shell_mult','shell_mult_n', v => { state.globals.shell_mult = v; render(); });
+  bindDual('cent_mult','cent_mult_n', v => { state.globals.cent_mult = v; render(); });
+  bindDual('svc_mult','svc_mult_n', v => { state.globals.svc_mult = v; render(); });
+
+  ['wire_mode','wire_val','margin_mode','margin_val'].forEach(id => {
+    $(id).addEventListener('input', () => { readGlobalsFromUI(); render(); });
+    $(id).addEventListener('change', () => { readGlobalsFromUI(); render(); });
+  });
+
+  $('mode').addEventListener('change', e => { state.mode = e.target.value; render(); });
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { state.mode = t.dataset.mode; render(); }));
+  $('search').addEventListener('input', e => { state.search = e.target.value; render(); });
+  $('sortBy').addEventListener('change', e => { state.sortBy = e.target.value; render(); });
+  $('btnApply').addEventListener('click', () => { readGlobalsFromUI(); render(); });
+  $('btnReset').addEventListener('click', () => { resetGlobals(); render(); });
+  $('btnResetRows').addEventListener('click', () => { state.overrides = { pe:{}, oz:{}, steel:{} }; render(); });
+  $('btnExport').addEventListener('click', exportCSV);
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => applyPreset(c.dataset.preset)));
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
