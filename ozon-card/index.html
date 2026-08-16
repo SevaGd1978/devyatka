@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карточка товара — Ozon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --magenta: #e6007a;
+      --magenta-deep: #b0005c;
+      --blush: #f7e6ef;
+      --blush-deep: #f0d0e0;
+      --ink: #3a1830;
+      --muted: #7a4a66;
+      --white: #fffafc;
+      --card: 900px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: Manrope, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, #ffd6ec 0%, transparent 55%),
+        radial-gradient(ellipse 70% 45% at 90% 10%, #ffc2e0 0%, transparent 50%),
+        linear-gradient(165deg, #fff5f9 0%, #f8e4ef 45%, #f3d5e6 100%);
+      padding: 32px 20px 64px;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header.controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    header.controls h1 {
+      font-family: "Playfair Display", serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header.controls p {
+      width: 100%;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: 999px;
+      padding: 12px 18px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--magenta), var(--magenta-deep));
+      box-shadow: 0 10px 24px rgba(230, 0, 122, 0.28);
+    }
+
+    .btn-secondary {
+      color: var(--magenta-deep);
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(230, 0, 122, 0.25);
+    }
+
+    .gallery {
+      display: grid;
+      gap: 28px;
+      justify-items: center;
+    }
+
+    .slide-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* ——— Main product card (screenshot target) ——— */
+    .card {
+      width: min(100%, var(--card));
+      aspect-ratio: 1 / 1;
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.85), transparent 45%),
+        linear-gradient(160deg, #fff8fb 0%, #ffe3f0 48%, #ffd0e6 100%);
+      box-shadow:
+        0 30px 60px rgba(120, 40, 80, 0.18),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(176, 0, 92, 0.18);
+      border-radius: 18px;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .badge {
+      position: absolute;
+      top: 36px;
+      left: 36px;
+      z-index: 4;
+      background: var(--magenta);
+      color: white;
+      font-size: clamp(0.7rem, 1.6vw, 0.85rem);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 999px;
+      box-shadow: 0 8px 18px rgba(230, 0, 122, 0.35);
+      animation: floatIn 0.7s ease both;
+    }
+
+    .photo-stage {
+      position: absolute;
+      inset: 0 0 34% 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      padding: 56px 48px 12px;
+    }
+
+    .photo-frame {
+      width: min(58%, 420px);
+      height: 100%;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .photo-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 22px 28px rgba(120, 30, 70, 0.22));
+      animation: riseIn 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .photo-placeholder {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      max-height: 100%;
+      border-radius: 24px;
+      border: 2px dashed rgba(176, 0, 92, 0.35);
+      background: rgba(255, 255, 255, 0.45);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .photo-placeholder:hover {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: var(--magenta);
+    }
+
+    .photo-placeholder span {
+      display: block;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      font-weight: 500;
+      opacity: 0.85;
+    }
+
+    .glow {
+      position: absolute;
+      width: 55%;
+      height: 28%;
+      bottom: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(230, 0, 122, 0.22), transparent 70%);
+      filter: blur(8px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .info {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
+      padding: 28px 36px 36px;
+      background: linear-gradient(180deg, transparent 0%, rgba(255, 250, 252, 0.55) 18%, rgba(255, 250, 252, 0.92) 42%, #fffafc 100%);
+      animation: slideUp 0.75s 0.15s ease both;
+    }
+
+    .brand {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(1.7rem, 4.2vw, 2.45rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: clamp(0.9rem, 2vw, 1.05rem);
+      font-weight: 600;
+      margin-bottom: 18px;
+      max-width: 36ch;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .feature {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(230, 0, 122, 0.12);
+      border-radius: 16px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    .feature strong {
+      display: block;
+      font-size: clamp(0.72rem, 1.7vw, 0.88rem);
+      font-weight: 800;
+      color: var(--magenta-deep);
+      margin-bottom: 2px;
+    }
+
+    .feature span {
+      display: block;
+      font-size: clamp(0.65rem, 1.4vw, 0.76rem);
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--magenta);
+      margin: 0 auto 8px;
+      box-shadow: 0 0 0 4px rgba(230, 0, 122, 0.15);
+    }
+
+    .static-slides {
+      width: min(100%, var(--card));
+      display: grid;
+      gap: 28px;
+    }
+
+    .static-slides img {
+      width: 100%;
+      border-radius: 28px;
+      display: block;
+      box-shadow: 0 24px 48px rgba(120, 40, 80, 0.16);
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px) scale(0.97); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 640px) {
+      .info { padding: 20px 22px 24px; }
+      .features { gap: 8px; }
+      .photo-stage { padding: 48px 24px 8px; inset: 0 0 38% 0; }
+      .badge { top: 28px; left: 28px; }
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      header.controls, .slide-label { display: none; }
+      .card, .static-slides img {
+        box-shadow: none;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="controls">
+      <h1>Карточки для Ozon</h1>
+      <div class="actions">
+        <label class="btn btn-primary" for="photoInput">Загрузить фото товара</label>
+        <input id="photoInput" type="file" accept="image/*" hidden />
+        <button class="btn btn-secondary" type="button" id="printBtn">Сохранить / печать</button>
+      </div>
+      <p>
+        Загрузите ваше фото — главная карточка обновится. Сделайте скриншот квадрата
+        или используйте «Сохранить / печать». Ниже — готовые слайды для галереи.
+      </p>
+    </header>
+
+    <div class="gallery">
+      <section>
+        <div class="slide-label">Слайд 1 · Главная</div>
+        <article class="card" id="mainCard" aria-label="Главная карточка товара">
+          <div class="badge">Хит продаж</div>
+          <div class="photo-stage">
+            <div class="glow" aria-hidden="true"></div>
+            <div class="photo-frame">
+              <label class="photo-placeholder" id="placeholder" for="photoInput">
+                Нажмите, чтобы добавить фото
+                <span>JPG / PNG · лучше на белом фоне</span>
+              </label>
+              <img id="productPhoto" alt="Товар" hidden />
+            </div>
+          </div>
+          <div class="info">
+            <h2 class="brand">Реалистичный фаллоимитатор</h2>
+            <p class="lead">Яркий magenta · мягкий силикон · устойчивая присоска</p>
+            <div class="features">
+              <div class="feature">
+                <div class="dot" aria-hidden="true"></div>
+                <strong>Присоска</strong>
+                <span>надёжная фиксация</span>
+              </div>
+              <div class="feature">
+                <div class="dot" aria-hidden="true"></div>
+                <strong>Текстура</strong>
+                <span>реалистичные вены</span>
+              </div>
+              <div class="feature">
+                <div class="dot" aria-hidden="true"></div>
+                <strong>Силикон</strong>
+                <span>гипоаллергенный</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="static-slides">
+        <div>
+          <div class="slide-label">Слайд 2 · Материал и цвет</div>
+          <img src="ozon-infographic-card.png" alt="Инфографика: премиум силикон, цвет Magenta, преимущества" />
+        </div>
+        <div>
+          <div class="slide-label">Слайд 3 · Почему выбирают</div>
+          <img src="ozon-benefits-card.png" alt="Инфографика: преимущества товара" />
+        </div>
+        <div>
+          <div class="slide-label">Слайд 4 · Уход и безопасность</div>
+          <img src="ozon-care-card.png" alt="Инфографика: уход и безопасность" />
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("photoInput");
+    const img = document.getElementById("productPhoto");
+    const placeholder = document.getElementById("placeholder");
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      img.hidden = false;
+      placeholder.hidden = true;
+    });
+
+    document.getElementById("printBtn").addEventListener("click", () => {
+      window.print();
+    });
+  </script>
+</body>
+</html>
