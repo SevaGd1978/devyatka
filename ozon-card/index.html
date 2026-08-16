@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Карточка товара — Ozon</title>
+  <title>Карточка товара 3:4 — Ozon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
@@ -11,12 +11,9 @@
     :root {
       --magenta: #e6007a;
       --magenta-deep: #b0005c;
-      --blush: #f7e6ef;
-      --blush-deep: #f0d0e0;
       --ink: #3a1830;
       --muted: #7a4a66;
-      --white: #fffafc;
-      --card: 900px;
+      --card-w: 720px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,16 +23,13 @@
       font-family: Manrope, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(ellipse 80% 50% at 20% 0%, #ffd6ec 0%, transparent 55%),
-        radial-gradient(ellipse 70% 45% at 90% 10%, #ffc2e0 0%, transparent 50%),
-        linear-gradient(165deg, #fff5f9 0%, #f8e4ef 45%, #f3d5e6 100%);
+        radial-gradient(ellipse 70% 45% at 15% 0%, #ffd0e8 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 95% 8%, #ffb8da 0%, transparent 50%),
+        linear-gradient(165deg, #fff5f9 0%, #f6dceb 50%, #efc8de 100%);
       padding: 32px 20px 64px;
     }
 
-    .page {
-      max-width: 980px;
-      margin: 0 auto;
-    }
+    .page { max-width: 820px; margin: 0 auto; }
 
     header.controls {
       display: flex;
@@ -48,7 +42,7 @@
 
     header.controls h1 {
       font-family: "Playfair Display", serif;
-      font-size: 1.55rem;
+      font-size: 1.5rem;
       font-weight: 700;
       letter-spacing: -0.02em;
     }
@@ -60,11 +54,7 @@
       line-height: 1.45;
     }
 
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
     .btn {
       appearance: none;
@@ -75,7 +65,7 @@
       font-size: 0.9rem;
       border-radius: 999px;
       padding: 12px 18px;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     .btn:active { transform: scale(0.98); }
@@ -94,7 +84,7 @@
 
     .gallery {
       display: grid;
-      gap: 28px;
+      gap: 32px;
       justify-items: center;
     }
 
@@ -108,115 +98,192 @@
       text-align: center;
     }
 
-    /* ——— Main product card (screenshot target) ——— */
+    /* ——— Main card 3:4 ——— */
     .card {
-      width: min(100%, var(--card));
-      aspect-ratio: 1 / 1;
+      width: min(100%, var(--card-w));
+      aspect-ratio: 3 / 4;
       position: relative;
       overflow: hidden;
       border-radius: 28px;
-      background:
-        radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.85), transparent 45%),
-        linear-gradient(160deg, #fff8fb 0%, #ffe3f0 48%, #ffd0e6 100%);
+      isolation: isolate;
       box-shadow:
-        0 30px 60px rgba(120, 40, 80, 0.18),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+        0 36px 70px rgba(90, 20, 60, 0.28),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+      transform-style: preserve-3d;
+      perspective: 1200px;
+    }
+
+    .card-bg {
+      position: absolute;
+      inset: -8%;
+      background:
+        center / cover no-repeat url("ozon-bg-blur-woman-3x4.png"),
+        linear-gradient(160deg, #f7c2d8, #e89aba);
+      filter: blur(2px) saturate(1.08);
+      transform: scale(1.08);
+      z-index: 0;
+      animation: bgDrift 12s ease-in-out infinite alternate;
+    }
+
+    .card-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 42%, transparent 20%, rgba(80, 10, 45, 0.35) 100%),
+        linear-gradient(180deg, rgba(255, 210, 230, 0.15) 0%, rgba(60, 10, 35, 0.45) 100%);
     }
 
     .card::before {
       content: "";
       position: absolute;
-      inset: 18px;
-      border: 1px solid rgba(176, 0, 92, 0.18);
+      inset: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
       border-radius: 18px;
       pointer-events: none;
-      z-index: 3;
+      z-index: 5;
     }
 
     .badge {
       position: absolute;
-      top: 36px;
-      left: 36px;
-      z-index: 4;
+      top: 32px;
+      left: 32px;
+      z-index: 6;
       background: var(--magenta);
       color: white;
-      font-size: clamp(0.7rem, 1.6vw, 0.85rem);
+      font-size: clamp(0.68rem, 1.8vw, 0.82rem);
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       padding: 8px 14px;
       border-radius: 999px;
-      box-shadow: 0 8px 18px rgba(230, 0, 122, 0.35);
+      box-shadow: 0 8px 18px rgba(230, 0, 122, 0.4);
       animation: floatIn 0.7s ease both;
     }
 
     .photo-stage {
       position: absolute;
-      inset: 0 0 34% 0;
+      inset: 0 0 30% 0;
       display: grid;
       place-items: center;
-      z-index: 1;
-      padding: 56px 48px 12px;
+      z-index: 2;
+      padding: 72px 40px 8px;
+      perspective: 900px;
     }
 
     .photo-frame {
-      width: min(58%, 420px);
+      width: min(62%, 340px);
       height: 100%;
       display: grid;
       place-items: center;
       position: relative;
+      transform-style: preserve-3d;
     }
 
-    .photo-frame img {
+    /* 3D floating product */
+    .product-3d {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      transform-style: preserve-3d;
+      transform: rotateY(-14deg) rotateX(6deg) translateZ(40px);
+      animation: float3d 4.5s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    .product-3d img {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      filter: drop-shadow(0 22px 28px rgba(120, 30, 70, 0.22));
-      animation: riseIn 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      position: relative;
+      z-index: 2;
+      filter:
+        drop-shadow(18px 28px 24px rgba(40, 5, 25, 0.45))
+        drop-shadow(-8px 10px 16px rgba(230, 0, 122, 0.25))
+        contrast(1.06) saturate(1.08);
+      -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent 100%);
+      mask-image: linear-gradient(180deg, #000 82%, transparent 100%);
+    }
+
+    /* Specular shine overlay for 3D gloss */
+    .product-3d::before {
+      content: "";
+      position: absolute;
+      inset: 8% 18%;
+      z-index: 3;
+      pointer-events: none;
+      background: linear-gradient(
+        115deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.35) 46%,
+        transparent 58%
+      );
+      mix-blend-mode: soft-light;
+      border-radius: 40%;
+      animation: shineSweep 5s ease-in-out infinite;
+      opacity: 0.85;
+    }
+
+    /* Soft contact shadow under product */
+    .product-shadow {
+      position: absolute;
+      bottom: 6%;
+      left: 50%;
+      width: 58%;
+      height: 8%;
+      transform: translateX(-50%) rotateX(70deg);
+      background: radial-gradient(ellipse, rgba(40, 5, 25, 0.55), transparent 70%);
+      filter: blur(6px);
+      z-index: 1;
+      animation: shadowPulse 4.5s ease-in-out infinite;
+    }
+
+    .glow {
+      position: absolute;
+      width: 70%;
+      height: 34%;
+      bottom: 4%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(255, 120, 190, 0.45), transparent 70%);
+      filter: blur(14px);
+      z-index: 0;
+      pointer-events: none;
     }
 
     .photo-placeholder {
       width: 100%;
-      aspect-ratio: 3 / 4;
+      aspect-ratio: 2 / 3;
       max-height: 100%;
       border-radius: 24px;
-      border: 2px dashed rgba(176, 0, 92, 0.35);
-      background: rgba(255, 255, 255, 0.45);
+      border: 2px dashed rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(6px);
       display: grid;
       place-items: center;
       text-align: center;
       padding: 24px;
-      color: var(--muted);
-      font-weight: 600;
+      color: #fff;
+      font-weight: 700;
       line-height: 1.4;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
       cursor: pointer;
       transition: background 0.2s ease, border-color 0.2s ease;
     }
 
     .photo-placeholder:hover {
-      background: rgba(255, 255, 255, 0.7);
-      border-color: var(--magenta);
+      background: rgba(255, 255, 255, 0.28);
+      border-color: #fff;
     }
 
     .photo-placeholder span {
       display: block;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       margin-top: 6px;
       font-weight: 500;
-      opacity: 0.85;
-    }
-
-    .glow {
-      position: absolute;
-      width: 55%;
-      height: 28%;
-      bottom: 8%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: radial-gradient(ellipse, rgba(230, 0, 122, 0.22), transparent 70%);
-      filter: blur(8px);
-      z-index: 0;
-      pointer-events: none;
+      opacity: 0.9;
     }
 
     .info {
@@ -224,71 +291,79 @@
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 2;
-      padding: 28px 36px 36px;
-      background: linear-gradient(180deg, transparent 0%, rgba(255, 250, 252, 0.55) 18%, rgba(255, 250, 252, 0.92) 42%, #fffafc 100%);
-      animation: slideUp 0.75s 0.15s ease both;
+      z-index: 4;
+      padding: 28px 28px 30px;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(40, 8, 28, 0.25) 18%,
+        rgba(35, 6, 24, 0.82) 55%,
+        rgba(28, 4, 18, 0.94) 100%
+      );
+      animation: slideUp 0.75s 0.12s ease both;
     }
 
     .brand {
       font-family: "Playfair Display", serif;
-      font-size: clamp(1.7rem, 4.2vw, 2.45rem);
+      font-size: clamp(1.45rem, 4.6vw, 2.1rem);
       font-weight: 700;
-      line-height: 1.1;
+      line-height: 1.12;
       letter-spacing: -0.02em;
-      color: var(--ink);
+      color: #fff;
       margin-bottom: 8px;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
     }
 
     .lead {
-      color: var(--muted);
-      font-size: clamp(0.9rem, 2vw, 1.05rem);
+      color: rgba(255, 220, 235, 0.88);
+      font-size: clamp(0.85rem, 2.2vw, 0.98rem);
       font-weight: 600;
-      margin-bottom: 18px;
-      max-width: 36ch;
+      margin-bottom: 16px;
+      max-width: 34ch;
     }
 
     .features {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 8px;
     }
 
     .feature {
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(230, 0, 122, 0.12);
-      border-radius: 16px;
-      padding: 12px 10px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 11px 8px;
       text-align: center;
     }
 
     .feature strong {
       display: block;
-      font-size: clamp(0.72rem, 1.7vw, 0.88rem);
+      font-size: clamp(0.7rem, 1.9vw, 0.84rem);
       font-weight: 800;
-      color: var(--magenta-deep);
+      color: #ffd6ea;
       margin-bottom: 2px;
     }
 
     .feature span {
       display: block;
-      font-size: clamp(0.65rem, 1.4vw, 0.76rem);
-      color: var(--muted);
+      font-size: clamp(0.62rem, 1.5vw, 0.72rem);
+      color: rgba(255, 230, 240, 0.75);
       font-weight: 600;
       line-height: 1.25;
     }
 
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: var(--magenta);
-      margin: 0 auto 8px;
-      box-shadow: 0 0 0 4px rgba(230, 0, 122, 0.15);
+      background: #ff4fa3;
+      margin: 0 auto 7px;
+      box-shadow: 0 0 0 3px rgba(255, 79, 163, 0.25);
     }
 
     .static-slides {
-      width: min(100%, var(--card));
+      width: min(100%, var(--card-w));
       display: grid;
       gap: 28px;
     }
@@ -297,7 +372,31 @@
       width: 100%;
       border-radius: 28px;
       display: block;
-      box-shadow: 0 24px 48px rgba(120, 40, 80, 0.16);
+      box-shadow: 0 24px 48px rgba(120, 40, 80, 0.18);
+    }
+
+    @keyframes float3d {
+      0%, 100% {
+        transform: rotateY(-14deg) rotateX(6deg) translateZ(40px) translateY(0);
+      }
+      50% {
+        transform: rotateY(-8deg) rotateX(4deg) translateZ(52px) translateY(-14px);
+      }
+    }
+
+    @keyframes shadowPulse {
+      0%, 100% { opacity: 0.9; width: 58%; }
+      50% { opacity: 0.65; width: 48%; }
+    }
+
+    @keyframes shineSweep {
+      0%, 100% { opacity: 0.35; transform: translateX(-8%); }
+      50% { opacity: 0.9; transform: translateX(8%); }
+    }
+
+    @keyframes bgDrift {
+      from { transform: scale(1.08) translate(0, 0); }
+      to { transform: scale(1.12) translate(-1.5%, 1%); }
     }
 
     @keyframes riseIn {
@@ -316,10 +415,11 @@
     }
 
     @media (max-width: 640px) {
-      .info { padding: 20px 22px 24px; }
-      .features { gap: 8px; }
-      .photo-stage { padding: 48px 24px 8px; inset: 0 0 38% 0; }
-      .badge { top: 28px; left: 28px; }
+      .info { padding: 20px 18px 22px; }
+      .features { gap: 6px; }
+      .photo-stage { padding: 64px 22px 6px; inset: 0 0 32% 0; }
+      .badge { top: 24px; left: 24px; }
+      .product-3d { transform: rotateY(-10deg) rotateX(5deg) translateZ(24px); }
     }
 
     @media print {
@@ -331,37 +431,44 @@
         page-break-inside: avoid;
         margin-bottom: 24px;
       }
+      .product-3d { animation: none; }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <header class="controls">
-      <h1>Карточки для Ozon</h1>
+      <h1>Карточка 3:4 · 3D</h1>
       <div class="actions">
         <label class="btn btn-primary" for="photoInput">Загрузить фото товара</label>
         <input id="photoInput" type="file" accept="image/*" hidden />
+        <label class="btn btn-secondary" for="bgInput">Свой фон</label>
+        <input id="bgInput" type="file" accept="image/*" hidden />
         <button class="btn btn-secondary" type="button" id="printBtn">Сохранить / печать</button>
       </div>
       <p>
-        Загрузите ваше фото — главная карточка обновится. Сделайте скриншот квадрата
-        или используйте «Сохранить / печать». Ниже — готовые слайды для галереи.
+        Формат <strong>3:4</strong>, размытый женский силуэт на фоне, товар с
+        <strong>3D-эффектом</strong> (объём, блик, тень). Загрузите фото — сделайте скриншот карточки.
       </p>
     </header>
 
     <div class="gallery">
       <section>
-        <div class="slide-label">Слайд 1 · Главная</div>
-        <article class="card" id="mainCard" aria-label="Главная карточка товара">
+        <div class="slide-label">Слайд 1 · Главная 3:4</div>
+        <article class="card" id="mainCard" aria-label="Главная карточка товара 3:4">
+          <div class="card-bg" id="cardBg" aria-hidden="true"></div>
           <div class="badge">Хит продаж</div>
           <div class="photo-stage">
             <div class="glow" aria-hidden="true"></div>
             <div class="photo-frame">
+              <div class="product-shadow" aria-hidden="true"></div>
               <label class="photo-placeholder" id="placeholder" for="photoInput">
-                Нажмите, чтобы добавить фото
-                <span>JPG / PNG · лучше на белом фоне</span>
+                Добавить фото товара
+                <span>получит 3D-объём и блик</span>
               </label>
-              <img id="productPhoto" alt="Товар" hidden />
+              <div class="product-3d" id="product3d" hidden>
+                <img id="productPhoto" alt="Товар" />
+              </div>
             </div>
           </div>
           <div class="info">
@@ -390,37 +497,64 @@
 
       <section class="static-slides">
         <div>
-          <div class="slide-label">Слайд 2 · Материал и цвет</div>
-          <img src="ozon-infographic-card.png" alt="Инфографика: премиум силикон, цвет Magenta, преимущества" />
+          <div class="slide-label">Слайд 2 · Материал и цвет · 3:4</div>
+          <img src="ozon-infographic-3x4.png" alt="Инфографика 3:4: премиум силикон" />
         </div>
         <div>
-          <div class="slide-label">Слайд 3 · Почему выбирают</div>
-          <img src="ozon-benefits-card.png" alt="Инфографика: преимущества товара" />
+          <div class="slide-label">Слайд 3 · Почему выбирают · 3:4</div>
+          <img src="ozon-benefits-3x4.png" alt="Инфографика 3:4: преимущества" />
         </div>
         <div>
-          <div class="slide-label">Слайд 4 · Уход и безопасность</div>
-          <img src="ozon-care-card.png" alt="Инфографика: уход и безопасность" />
+          <div class="slide-label">Слайд 4 · Уход и безопасность · 3:4</div>
+          <img src="ozon-care-3x4.png" alt="Инфографика 3:4: уход" />
         </div>
       </section>
     </div>
   </div>
 
   <script>
-    const input = document.getElementById("photoInput");
-    const img = document.getElementById("productPhoto");
+    const photoInput = document.getElementById("photoInput");
+    const bgInput = document.getElementById("bgInput");
+    const productPhoto = document.getElementById("productPhoto");
+    const product3d = document.getElementById("product3d");
     const placeholder = document.getElementById("placeholder");
+    const cardBg = document.getElementById("cardBg");
 
-    input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
+    photoInput.addEventListener("change", () => {
+      const file = photoInput.files && photoInput.files[0];
       if (!file) return;
       const url = URL.createObjectURL(file);
-      img.src = url;
-      img.hidden = false;
+      productPhoto.src = url;
+      product3d.hidden = false;
       placeholder.hidden = true;
+    });
+
+    bgInput.addEventListener("change", () => {
+      const file = bgInput.files && bgInput.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      cardBg.style.backgroundImage = `url("${url}")`;
+      cardBg.style.filter = "blur(10px) saturate(1.1) brightness(0.92)";
     });
 
     document.getElementById("printBtn").addEventListener("click", () => {
       window.print();
+    });
+
+    /* Mild parallax 3D follow on pointer */
+    const card = document.getElementById("mainCard");
+    card.addEventListener("pointermove", (e) => {
+      if (product3d.hidden) return;
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      product3d.style.animation = "none";
+      product3d.style.transform =
+        `rotateY(${-14 + x * 18}deg) rotateX(${6 - y * 12}deg) translateZ(48px)`;
+    });
+    card.addEventListener("pointerleave", () => {
+      product3d.style.animation = "";
+      product3d.style.transform = "";
     });
   </script>
 </body>
