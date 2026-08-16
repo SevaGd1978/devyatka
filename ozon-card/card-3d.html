@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D карточка товара — Ozon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --magenta: #e6007a;
+      --card-w: 720px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: Manrope, sans-serif;
+      background: linear-gradient(160deg, #fff0f7, #f3c8dc);
+      padding: 28px 16px 48px;
+      color: #3a1830;
+    }
+
+    .page { max-width: 820px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    header h1 {
+      font-family: "Playfair Display", serif;
+      font-size: 1.45rem;
+      flex: 1 1 100%;
+    }
+
+    header p {
+      flex: 1 1 100%;
+      color: #7a4a66;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border-radius: 999px;
+      padding: 11px 16px;
+      transition: transform 0.12s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #e6007a, #b0005c);
+      box-shadow: 0 8px 20px rgba(230, 0, 122, 0.3);
+    }
+
+    .btn-secondary {
+      color: #b0005c;
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(230,0,122,0.25);
+    }
+
+    .export-wrap {
+      width: min(100%, var(--card-w));
+      margin: 0 auto;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 32px 64px rgba(80, 20, 55, 0.28);
+      position: relative;
+    }
+
+    #cardRoot {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      position: relative;
+      background: #1a0812;
+    }
+
+    #canvas3d {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 26px 26px;
+      z-index: 2;
+    }
+
+    .badge {
+      align-self: flex-start;
+      background: var(--magenta);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 7px 13px;
+      border-radius: 999px;
+      box-shadow: 0 6px 16px rgba(230,0,122,0.45);
+    }
+
+    .info {
+      background: linear-gradient(180deg, transparent, rgba(20,4,14,0.55) 20%, rgba(20,4,14,0.88));
+      margin: 0 -26px -26px;
+      padding: 48px 26px 26px;
+    }
+
+    .info h2 {
+      font-family: "Playfair Display", serif;
+      color: #fff;
+      font-size: clamp(1.35rem, 4vw, 1.85rem);
+      line-height: 1.1;
+      margin-bottom: 7px;
+      text-shadow: 0 2px 14px rgba(0,0,0,0.4);
+    }
+
+    .info p {
+      color: rgba(255,220,235,0.9);
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .feature {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+    }
+
+    .feature strong {
+      display: block;
+      color: #ffd6ea;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .feature span {
+      display: block;
+      color: rgba(255,230,240,0.75);
+      font-size: 0.68rem;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .hint {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: #7a4a66;
+    }
+
+    .loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(20,4,14,0.5);
+      color: #fff;
+      font-weight: 700;
+      z-index: 5;
+      transition: opacity 0.4s;
+    }
+
+    .loading.hidden { opacity: 0; pointer-events: none; }
+
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Реальная 3D-карточка · 3:4</h1>
+      <p>
+        WebGL-сцена: объёмная модель, студийный свет, тени и отражения.
+        Крутите мышью · экспортируйте PNG для Ozon.
+      </p>
+      <label class="btn btn-primary" for="photoInput">Фото → текстура 3D</label>
+      <input id="photoInput" type="file" accept="image/*" />
+      <label class="btn btn-secondary" for="bgInput">Свой фон</label>
+      <input id="bgInput" type="file" accept="image/*" />
+      <button class="btn btn-secondary" id="exportBtn">Скачать PNG</button>
+      <a class="btn btn-secondary" href="index.html">CSS-версия</a>
+    </header>
+
+    <div class="export-wrap" id="exportWrap">
+      <div id="cardRoot">
+        <canvas id="canvas3d"></canvas>
+        <div class="loading" id="loading">Загрузка 3D-сцены…</div>
+        <div class="overlay">
+          <div class="badge">Хит продаж</div>
+          <div class="info">
+            <h2>Реалистичный фаллоимитатор</h2>
+            <p>Яркий magenta · мягкий силикон · устойчивая присоска</p>
+            <div class="features">
+              <div class="feature"><strong>Присоска</strong><span>надёжная</span></div>
+              <div class="feature"><strong>Текстура</strong><span>реалистичная</span></div>
+              <div class="feature"><strong>Силикон</strong><span>гипоаллергенный</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Перетаскивайте для поворота · колёсико — приближение</p>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm";
+
+    const canvas = document.getElementById("canvas3d");
+    const cardRoot = document.getElementById("cardRoot");
+    const loading = document.getElementById("loading");
+
+    let renderer, scene, camera, controls, productGroup, photoPlane;
+    let autoRotate = true;
+    let idleTimer;
+
+    function getSize() {
+      const w = cardRoot.clientWidth;
+      const h = Math.round(w * 4 / 3);
+      return { w, h };
+    }
+
+    function buildProductProfile() {
+      const pts = [];
+      const add = (x, y) => pts.push(new THREE.Vector2(x, y));
+
+      add(0, 0);
+      add(0.038, 0);
+      add(0.052, 0.012);
+      add(0.055, 0.028);
+      add(0.048, 0.04);
+      add(0.042, 0.055);
+      add(0.048, 0.075);
+      add(0.055, 0.095);
+      add(0.052, 0.12);
+      add(0.046, 0.145);
+      add(0.044, 0.17);
+      add(0.046, 0.195);
+      add(0.05, 0.22);
+      add(0.048, 0.245);
+      add(0.044, 0.27);
+      add(0.042, 0.295);
+      add(0.044, 0.32);
+      add(0.048, 0.345);
+      add(0.052, 0.37);
+      add(0.054, 0.395);
+      add(0.056, 0.42);
+      add(0.058, 0.445);
+      add(0.062, 0.465);
+      add(0.068, 0.478);
+      add(0.074, 0.488);
+      add(0.08, 0.496);
+      add(0.084, 0.502);
+      add(0.084, 0.508);
+      add(0.078, 0.514);
+      add(0.07, 0.518);
+      add(0.062, 0.52);
+      add(0.054, 0.522);
+      add(0.048, 0.528);
+      add(0.044, 0.538);
+      add(0.042, 0.552);
+      add(0.04, 0.568);
+      add(0.038, 0.585);
+      add(0.036, 0.6);
+      add(0.032, 0.612);
+      add(0.028, 0.62);
+      add(0.022, 0.625);
+      add(0.015, 0.628);
+      add(0.008, 0.628);
+      add(0, 0.628);
+
+      return pts;
+    }
+
+    function createVeinBump() {
+      const size = 512;
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#808080";
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.strokeStyle = "#a8a8a8";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 14; i++) {
+        ctx.beginPath();
+        const x0 = 80 + Math.random() * 60;
+        const y0 = 40 + i * 32;
+        ctx.moveTo(x0, y0);
+        for (let j = 1; j <= 8; j++) {
+          ctx.lineTo(
+            x0 + j * 42 + Math.sin(i + j) * 18,
+            y0 + Math.sin(j * 0.9 + i) * 22
+          );
+        }
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#707070";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(260, 60 + i * 55);
+        ctx.bezierCurveTo(320, 80 + i * 55, 360, 100 + i * 55, 420, 120 + i * 55);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 3);
+      return tex;
+    }
+
+    function createSiliconeMaterial(bumpMap) {
+      return new THREE.MeshPhysicalMaterial({
+        color: 0xe6007a,
+        roughness: 0.38,
+        metalness: 0.02,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.35,
+        sheen: 0.9,
+        sheenRoughness: 0.55,
+        sheenColor: new THREE.Color(0xff99cc),
+        bumpMap,
+        bumpScale: 0.018,
+        envMapIntensity: 0.85,
+      });
+    }
+
+    function createProductMesh(material) {
+      const geo = new THREE.LatheGeometry(buildProductProfile(), 128);
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.02;
+      return mesh;
+    }
+
+    function createScene() {
+      const { w, h } = getSize();
+
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true,
+          alpha: false,
+          preserveDrawingBuffer: true,
+        });
+      } catch (err) {
+        loading.textContent = "WebGL недоступен в этом браузере";
+        throw err;
+      }
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(w, h, false);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(34, w / h, 0.01, 20);
+      camera.position.set(0.72, 0.38, 1.18);
+
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmrem.dispose();
+
+      const texLoader = new THREE.TextureLoader();
+      texLoader.load("ozon-bg-blur-woman-3x4.png", (bgTex) => {
+        bgTex.colorSpace = THREE.SRGBColorSpace;
+        scene.background = bgTex;
+      });
+
+      const fogColor = new THREE.Color(0x3a1028);
+      scene.fog = new THREE.FogExp2(fogColor, 0.22);
+
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(1.4, 64),
+        new THREE.MeshStandardMaterial({
+          color: 0x2a0a1c,
+          roughness: 0.85,
+          metalness: 0.05,
+          transparent: true,
+          opacity: 0.55,
+        })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.001;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const bump = createVeinBump();
+      const material = createSiliconeMaterial(bump);
+
+      productGroup = new THREE.Group();
+      const product = createProductMesh(material);
+      productGroup.add(product);
+      productGroup.position.set(0, 0.34, 0);
+      productGroup.scale.setScalar(1.18);
+      scene.add(productGroup);
+
+      const key = new THREE.DirectionalLight(0xffffff, 2.2);
+      key.position.set(1.2, 2.0, 1.5);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.camera.near = 0.1;
+      key.shadow.camera.far = 8;
+      key.shadow.camera.left = -1.2;
+      key.shadow.camera.right = 1.2;
+      key.shadow.camera.top = 1.2;
+      key.shadow.camera.bottom = -1.2;
+      key.shadow.bias = -0.0004;
+      scene.add(key);
+
+      const fill = new THREE.DirectionalLight(0xffb8dd, 0.75);
+      fill.position.set(-1.4, 0.8, 0.6);
+      scene.add(fill);
+
+      const rim = new THREE.DirectionalLight(0xff66aa, 1.1);
+      rim.position.set(0.2, 1.0, -1.6);
+      scene.add(rim);
+
+      scene.add(new THREE.AmbientLight(0xffd0e8, 0.35));
+
+      const spot = new THREE.SpotLight(0xffffff, 0.9, 6, Math.PI / 5, 0.4);
+      spot.position.set(0.3, 1.8, 0.8);
+      spot.castShadow = false;
+      scene.add(spot);
+
+      controls = new OrbitControls(camera, canvas);
+      controls.enablePan = false;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.minDistance = 0.65;
+      controls.maxDistance = 1.8;
+      controls.target.set(0, 0.42, 0);
+      controls.minPolarAngle = Math.PI * 0.25;
+      controls.maxPolarAngle = Math.PI * 0.72;
+      controls.addEventListener("start", () => {
+        autoRotate = false;
+        clearTimeout(idleTimer);
+      });
+      controls.addEventListener("end", () => {
+        idleTimer = setTimeout(() => { autoRotate = true; }, 3500);
+      });
+
+      loading.classList.add("hidden");
+      let frames = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+        if (autoRotate && productGroup) {
+          productGroup.rotation.y += 0.007;
+        }
+        controls?.update();
+        renderer.render(scene, camera);
+        if (frames++ === 2) loading.classList.add("hidden");
+      }
+      animate();
+    }
+
+    function onResize() {
+      if (!renderer) return;
+      const { w, h } = getSize();
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+
+    function applyPhotoTexture(file) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const tex = new THREE.Texture(img);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+
+        if (photoPlane) {
+          productGroup.remove(photoPlane);
+          photoPlane.geometry.dispose();
+          photoPlane.material.dispose();
+        }
+
+        const aspect = img.width / img.height;
+        const planeH = 0.72;
+        const planeW = planeH * aspect;
+
+        const mat = new THREE.MeshPhysicalMaterial({
+          map: tex,
+          transparent: true,
+          alphaTest: 0.04,
+          roughness: 0.35,
+          metalness: 0,
+          clearcoat: 0.5,
+          clearcoatRoughness: 0.3,
+          envMapIntensity: 0.7,
+          side: THREE.DoubleSide,
+        });
+
+        photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(planeW, planeH), mat);
+        photoPlane.castShadow = true;
+        photoPlane.position.set(0.12, 0.08, 0.02);
+        photoPlane.rotation.y = -0.35;
+        productGroup.add(photoPlane);
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+
+    function applyBgTexture(file) {
+      const url = URL.createObjectURL(file);
+      new THREE.TextureLoader().load(url, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        scene.background = tex;
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    document.getElementById("photoInput").addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (f) applyPhotoTexture(f);
+    });
+
+    document.getElementById("bgInput").addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (f) applyBgTexture(f);
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("exportBtn");
+      btn.disabled = true;
+      btn.textContent = "Рендер…";
+      autoRotate = false;
+      renderer.render(scene, camera);
+      await new Promise(r => setTimeout(r, 120));
+      try {
+        const shot = await html2canvas(document.getElementById("exportWrap"), {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null,
+        });
+        const link = document.createElement("a");
+        link.download = "ozon-3d-card.png";
+        link.href = shot.toDataURL("image/png");
+        link.click();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Скачать PNG";
+        autoRotate = true;
+      }
+    });
+
+    window.addEventListener("resize", onResize);
+    createScene();
+  </script>
+</body>
+</html>
